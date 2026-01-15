@@ -18,6 +18,7 @@ type UserController interface {
 	Login(c *gin.Context)
 	GetProfile(c *gin.Context)
 	UpdateProfile(c *gin.Context)
+	UpdatePassword(c *gin.Context)
 }
 
 // ==================== 接口实现 ====================
@@ -128,3 +129,33 @@ func (ctrl *userController) UpdateProfile(c *gin.Context) {
 	// 4. 返回成功响应
 	response.Success(c, "更新成功")
 }
+
+// UpdatePassword 更新用户密码接口
+// POST /api/v1/user/password
+// 需要 JWT 鉴权，userID 从中间件获取
+func (ctrl *userController) UpdatePassword(c *gin.Context) {
+	// 1. 从 Context 获取 userID
+	userID, exists := c.Get("userID")
+	if !exists {
+		response.Unauthorized(c, "请先登录")
+		return
+	}
+
+	// 2. 绑定请求参数
+	var req dto.UpdatePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "参数错误: "+err.Error())
+		return
+	}
+
+	// 3. 调用 Service 层更新密码
+	err := ctrl.userService.UpdatePassword(userID.(uint), &req)
+	if err != nil {
+		response.Fail(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// 4. 返回成功响应
+	response.Success(c, "更新成功")
+}	
+

@@ -117,6 +117,38 @@ func (u *usecase) UpdateProfile(userID uint, username, email string) error {
 	return u.userRepo.Update(user)
 }
 
+// UpdatePassword 更新用户密码（验证旧密码 + 加密新密码）
+func (u *usecase) UpdatePassword(userID uint, oldPassword, newPassword string) error {
+	// 1. 根据用户ID查找用户
+	user, err := u.userRepo.GetByID(userID)
+	if err != nil {
+		return userDomain.ErrUserNotFound
+	}
+
+	// 2. 验证旧密码是否正确
+	if !checkPassword(user, oldPassword) {
+		return userDomain.ErrInvalidPassword
+	}
+
+	// 3. 校验新密码长度
+	if len(newPassword) < 6 {
+		return userDomain.ErrPasswordTooShort
+	}
+
+	// 4. 加密新密码
+	hashedPassword, err := hashPassword(newPassword)
+	if err != nil {
+		return err
+	}
+
+	// 5. 更新用户密码
+	user.Password = hashedPassword
+	user.UpdatedAt = time.Now()
+
+	// 6. 调用 DAO 层更新
+	return u.userRepo.Update(user)
+}
+
 // ==================== 私有辅助函数 ====================
 
 // hashPassword 密码加密

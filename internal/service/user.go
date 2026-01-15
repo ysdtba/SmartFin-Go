@@ -15,6 +15,7 @@ type UserService interface {
 	Login(req *dto.LoginRequest) (*dto.LoginResponse, error)
 	GetProfile(userID uint) (*dto.UserResponse, error)
 	UpdateProfile(userID uint, req *dto.UpdateUserRequest) error
+	UpdatePassword(userID uint, req *dto.UpdatePasswordRequest) error
 }
 
 // ==================== 接口实现 ====================
@@ -94,6 +95,17 @@ func (s *userService) GetProfile(userID uint) (*dto.UserResponse, error) {
 func (s *userService) UpdateProfile(userID uint, req *dto.UpdateUserRequest) error {
 	// 1. 调用 Domain 层更新用户信息
 	err := s.userDomain.UpdateProfile(userID, req.Username, req.Email)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdatePassword 更新用户密码
+// Service 层职责：调用 Domain 层更新用户密码
+func (s *userService) UpdatePassword(userID uint, req *dto.UpdatePasswordRequest) error {
+	// 1. 调用 Domain 层更新用户密码（传入旧密码和新密码）
+	err := s.userDomain.UpdatePassword(userID, req.OldPassword, req.NewPassword)
 	if err != nil {
 		return err
 	}

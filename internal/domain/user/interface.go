@@ -32,4 +32,7 @@ type Domain interface {
 
 	// UpdateProfile 更新用户个人信息
 	UpdateProfile(userID uint, username, email string) error
+
+	// UpdatePassword 更新用户密码（需验证旧密码）
+	UpdatePassword(userID uint, oldPassword, newPassword string) error
 }

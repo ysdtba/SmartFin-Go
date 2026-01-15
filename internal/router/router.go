@@ -33,8 +33,10 @@ func SetupRouter(userController controller.UserController) *gin.Engine {
 	authGroup := r.Group("/api/v1/user")
 	authGroup.Use(middleware.JWTAuth()) // ← 使用 JWT 中间件
 	{
-		authGroup.GET("/profile", userController.GetProfile)    // 获取个人信息
-		authGroup.PUT("/profile", userController.UpdateProfile) // 更新个人信息
+		authGroup.GET("/profile", userController.GetProfile)       // 获取个人信息
+		authGroup.PUT("/profile", userController.UpdateProfile)    // 更新个人信息
+		authGroup.POST("/password", userController.UpdatePassword) // 更新密码
+
 	}
 
 	return r
