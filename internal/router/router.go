@@ -10,8 +10,11 @@ import (
 )
 
 // SetupRouter 初始化并配置所有路由
-// 参数：userController 从 bootstrap 传入
-func SetupRouter(userController controller.UserController) *gin.Engine {
+// 参数：从 bootstrap 传入各个 Controller
+func SetupRouter(
+	userController controller.UserController,
+	txController controller.TransactionController,
+) *gin.Engine {
 	r := gin.Default()
 
 	// 健康检查接口
@@ -22,21 +25,27 @@ func SetupRouter(userController controller.UserController) *gin.Engine {
 		})
 	})
 
-	// ==================== 公开接口（无需登录） ====================
+	// ==================== 用户模块 - 公开接口 ====================
 	publicGroup := r.Group("/api/v1/user")
 	{
 		publicGroup.POST("/register", userController.Register)
 		publicGroup.POST("/login", userController.Login)
 	}
 
-	// ==================== 私有接口（需要 JWT 鉴权） ====================
-	authGroup := r.Group("/api/v1/user")
-	authGroup.Use(middleware.JWTAuth()) // ← 使用 JWT 中间件
+	// ==================== 用户模块 - 私有接口 ====================
+	userAuthGroup := r.Group("/api/v1/user")
+	userAuthGroup.Use(middleware.JWTAuth())
 	{
-		authGroup.GET("/profile", userController.GetProfile)       // 获取个人信息
-		authGroup.PUT("/profile", userController.UpdateProfile)    // 更新个人信息
-		authGroup.POST("/password", userController.UpdatePassword) // 更新密码
+		userAuthGroup.GET("/profile", userController.GetProfile)       // 获取个人信息
+		userAuthGroup.PUT("/profile", userController.UpdateProfile)    // 更新个人信息
+		userAuthGroup.POST("/password", userController.UpdatePassword) // 更新密码
+	}
 
+	// ==================== 交易模块 - 私有接口 ====================
+	txGroup := r.Group("/api/v1/transactions")
+	txGroup.Use(middleware.JWTAuth())
+	{
+		txGroup.POST("/create", txController.Create) // 创建交易：POST /api/v1/transactions/create
 	}
 
 	return r

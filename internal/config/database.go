@@ -50,7 +50,10 @@ func InitDB(cfg *DatabaseConfig) (*gorm.DB, error) {
 	log.Println("✅ 数据库连接成功")
 
 	// 自动迁移（创建表）
-	if err := db.AutoMigrate(&entity.User{}); err != nil {
+	if err := db.AutoMigrate(
+		&entity.User{},
+		&entity.Transaction{}, // ← 新增 Transaction 表
+	); err != nil {
 		return nil, fmt.Errorf("数据库迁移失败: %w", err)
 	}
 

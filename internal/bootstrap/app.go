@@ -7,7 +7,9 @@ import (
 
 	"github.com/florentyang/smartfin-go/internal/config"
 	"github.com/florentyang/smartfin-go/internal/controller"
+	txRepoImpl "github.com/florentyang/smartfin-go/internal/dao/transaction/impl"
 	userRepoImpl "github.com/florentyang/smartfin-go/internal/dao/user/impl"
+	txDomainImpl "github.com/florentyang/smartfin-go/internal/domain/transaction/impl"
 	userDomainImpl "github.com/florentyang/smartfin-go/internal/domain/user/impl"
 	"github.com/florentyang/smartfin-go/internal/service"
 )
@@ -17,7 +19,8 @@ type App struct {
 	DB *gorm.DB
 
 	// Controllers（给 Router 用）
-	UserController controller.UserController
+	UserController        controller.UserController
+	TransactionController controller.TransactionController
 }
 
 // NewApp 创建并初始化应用程序
@@ -31,6 +34,7 @@ func NewApp() *App {
 	// ==================== 2. 业务层初始化 ====================
 	app.initUserModule()
 
+	app.initTransactionModule()
 	// TODO: 以后加其他模块
 	// app.initAssetModule()
 	// app.initTransactionModule()
@@ -50,10 +54,19 @@ func (app *App) initDatabase() {
 // initUserModule 初始化用户模块（依赖注入链）
 func (app *App) initUserModule() {
 	// DAO → Domain → Service → Controller
-	userRepo := userRepoImpl.NewUserRepo(app.DB)          // 使用 DAO impl 包
-	userDomain := userDomainImpl.NewUserDomain(userRepo)  // 使用 Domain impl 包
+	userRepo := userRepoImpl.NewUserRepo(app.DB)         // 使用 DAO impl 包
+	userDomain := userDomainImpl.NewUserDomain(userRepo) // 使用 Domain impl 包
 	userService := service.NewUserService(userDomain)
 	userController := controller.NewUserController(userService)
 
 	app.UserController = userController
+}
+
+func (app *App) initTransactionModule() {
+	txRepo := txRepoImpl.NewTransactionRepo(app.DB)
+	txDomain := txDomainImpl.NewTransactionDomain(txRepo)
+	txService := service.NewTransactionService(txDomain)
+	txController := controller.NewTransactionController(txService)
+
+	app.TransactionController = txController
 }

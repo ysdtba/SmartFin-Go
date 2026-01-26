@@ -21,6 +21,7 @@ type UserController interface {
 	UpdatePassword(c *gin.Context)
 }
 
+
 // ==================== 接口实现 ====================
 
 type userController struct {
@@ -158,4 +159,5 @@ func (ctrl *userController) UpdatePassword(c *gin.Context) {
 	// 4. 返回成功响应
 	response.Success(c, "更新成功")
 }	
+
 
