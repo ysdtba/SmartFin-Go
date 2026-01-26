@@ -77,3 +77,29 @@ func (u *usecase) Create(input *txDomain.CreateInput) (*entity.Transaction, erro
 
 	return tx, nil
 }
+
+// List 查询交易列表
+// 这里业务逻辑比较简单，主要是将 Domain 的 Input 转换为 DAO 的 Filter
+func (u *usecase) List(input *txDomain.ListInput) (*txDomain.ListOutput, error) {
+	// 构建 DAO 层的查询条件
+	filter := &txRepo.ListFilter{
+		UserID:    input.UserID,
+		Symbol:    input.Symbol,
+		Type:      input.Type,
+		StartTime: input.StartTime,
+		EndTime:   input.EndTime,
+		Page:      input.Page,
+		PageSize:  input.PageSize,
+	}
+
+	// 调用 DAO 层查询
+	txList, total, err := u.txRepo.FindByUserID(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	return &txDomain.ListOutput{
+		List:  txList,
+		Total: total,
+	}, nil
+}

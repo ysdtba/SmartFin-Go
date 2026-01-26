@@ -21,6 +21,20 @@ type CreateTransactionRequest struct {
 	Notes     string          `json:"notes"`                                  // 备注（可选）
 }
 
+// ListTransactionRequest 查询交易列表请求
+// 使用 form 标签绑定 Query 参数
+type ListTransactionRequest struct {
+	// ===== 分页参数 =====
+	Page     int `form:"page"`      // 页码，默认 1
+	PageSize int `form:"page_size"` // 每页条数，默认 20
+
+	// ===== 筛选参数 =====
+	Symbol    string `form:"symbol"`     // 按股票代码筛选（可选）
+	Type      string `form:"type"`       // 按交易类型筛选：BUY/SELL（可选）
+	StartDate string `form:"start_date"` // 开始日期：2024-01-01（可选）
+	EndDate   string `form:"end_date"`   // 结束日期：2024-12-31（可选）
+}
+
 // ================== 响应 DTO ==================
 
 // TransactionResponse 交易响应
@@ -37,4 +51,12 @@ type TransactionResponse struct {
 	TradeTime time.Time       `json:"trade_time"`
 	Notes     string          `json:"notes"`
 	CreatedAt time.Time       `json:"created_at"`
+}
+
+// ListTransactionResponse 分页列表响应
+type ListTransactionResponse struct {
+	Total    int64                  `json:"total"`     // 总条数
+	Page     int                    `json:"page"`      // 当前页码
+	PageSize int                    `json:"page_size"` // 每页条数
+	List     []*TransactionResponse `json:"list"`      // 数据列表
 }

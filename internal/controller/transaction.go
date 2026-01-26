@@ -14,6 +14,7 @@ import (
 
 type TransactionController interface {
 	Create(c *gin.Context) // 创建交易
+	List(c *gin.Context)   // 查询交易列表
 }
 
 // ==================== 结构体 ====================
@@ -57,4 +58,33 @@ func (ctrl *transactionController) Create(c *gin.Context) {
 
 	// 4. 返回创建成功的交易记录
 	response.Success(c, tx)
+}
+
+// List 查询交易列表
+// GET /api/v1/transactions
+// Query 参数：page, page_size, symbol, type, start_date, end_date
+func (ctrl *transactionController) List(c *gin.Context) {
+	// 1. 从 JWT 中间件获取用户ID
+	userID, exists := c.Get("userID")
+	if !exists {
+		response.Unauthorized(c, "请先登录")
+		return
+	}
+
+	// 2. 绑定 Query 参数（URL → DTO）
+	var req dto.ListTransactionRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		response.BadRequest(c, "参数错误: "+err.Error())
+		return
+	}
+
+	// 3. 调用 Service 层查询
+	result, err := ctrl.txService.List(userID.(uint), &req)
+	if err != nil {
+		response.Fail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// 4. 返回分页数据
+	response.Success(c, result)
 }

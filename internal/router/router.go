@@ -46,6 +46,7 @@ func SetupRouter(
 	txGroup.Use(middleware.JWTAuth())
 	{
 		txGroup.POST("/create", txController.Create) // 创建交易：POST /api/v1/transactions/create
+		txGroup.GET("/list", txController.List)      // 查询交易列表：GET /api/v1/transactions/list
 	}
 
 	return r

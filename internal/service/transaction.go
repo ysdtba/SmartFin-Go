@@ -13,6 +13,7 @@ import (
 
 type TransactionService interface {
 	Create(userID uint, req *dto.CreateTransactionRequest) (*dto.TransactionResponse, error)
+	List(userID uint, req *dto.ListTransactionRequest) (*dto.ListTransactionResponse, error)
 }
 
 // ==================== 接口实现 ====================
@@ -59,6 +60,70 @@ func (s *transactionService) Create(userID uint, req *dto.CreateTransactionReque
 
 	// 3. Entity → DTO 转换
 	return txEntityToDTO(tx), nil
+}
+
+// List 查询交易列表
+// Service 层职责：
+// 1. 设置默认值
+// 2. 解析日期字符串
+// 3. 调用 Domain 层
+// 4. Entity 列表 → DTO 列表转换
+func (s *transactionService) List(userID uint, req *dto.ListTransactionRequest) (*dto.ListTransactionResponse, error) {
+	// 1. 设置分页默认值
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = 20
+	}
+
+	// 2. 解析日期字符串（可选参数）
+	var startTime, endTime *time.Time
+
+	if req.StartDate != "" {
+		t, err := time.Parse("2006-01-02", req.StartDate)
+		if err != nil {
+			return nil, err
+		}
+		startTime = &t
+	}
+
+	if req.EndDate != "" {
+		t, err := time.Parse("2006-01-02", req.EndDate)
+		if err != nil {
+			return nil, err
+		}
+		// 结束日期加一天，以包含当天的数据
+		t = t.AddDate(0, 0, 1)
+		endTime = &t
+	}
+
+	// 3. 调用 Domain 层查询
+	output, err := s.txDomain.List(&txDomain.ListInput{
+		UserID:    userID,
+		Symbol:    req.Symbol,
+		Type:      req.Type,
+		StartTime: startTime,
+		EndTime:   endTime,
+		Page:      req.Page,
+		PageSize:  req.PageSize,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. Entity 列表 → DTO 列表转换
+	list := make([]*dto.TransactionResponse, len(output.List))
+	for i, tx := range output.List {
+		list[i] = txEntityToDTO(tx)
+	}
+
+	return &dto.ListTransactionResponse{
+		Total:    output.Total,
+		Page:     req.Page,
+		PageSize: req.PageSize,
+		List:     list,
+	}, nil
 }
 
 // ==================== 私有辅助函数 ====================

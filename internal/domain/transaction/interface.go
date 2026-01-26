@@ -35,6 +35,23 @@ type CreateInput struct {
 	Notes     string
 }
 
+// ListInput 查询交易列表的输入参数
+type ListInput struct {
+	UserID    uint       // 用户ID（必须）
+	Symbol    string     // 股票代码（可选）
+	Type      string     // 交易类型（可选）
+	StartTime *time.Time // 开始时间（可选）
+	EndTime   *time.Time // 结束时间（可选）
+	Page      int        // 页码
+	PageSize  int        // 每页条数
+}
+
+// ListOutput 查询交易列表的输出结果
+type ListOutput struct {
+	List  []*entity.Transaction // 交易列表
+	Total int64                 // 总条数
+}
+
 // ==================== Domain 接口定义 ====================
 // Service 层会依赖这个接口
 
@@ -42,4 +59,8 @@ type Domain interface {
 	// Create 创建交易记录
 	// 核心业务逻辑：校验参数、计算总金额、存入数据库
 	Create(input *CreateInput) (*entity.Transaction, error)
+
+	// List 查询交易列表
+	// 支持分页和筛选
+	List(input *ListInput) (*ListOutput, error)
 }
