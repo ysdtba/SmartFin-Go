@@ -87,7 +87,7 @@
 
 ## 📦 功能模块
 
-### 阶段一：金融系统骨架 ✅ 进行中
+### 阶段一：金融系统骨架 ✅ 已完成
 
 > **目标**：搭建规范、安全的 Go 后端基础设施
 
@@ -99,14 +99,27 @@
 | 用户登录 | POST | `/api/v1/user/login` | 验证身份，返回 JWT Token | ✅ 已完成 |
 | 获取个人信息 | GET | `/api/v1/user/profile` | 获取当前登录用户信息 | ✅ 已完成 |
 | 更新个人信息 | PUT | `/api/v1/user/profile` | 修改用户名、邮箱 | ✅ 已完成 |
-| 修改密码 | PUT | `/api/v1/user/password` | 验证旧密码后更新 | 🚧 开发中 |
+| 修改密码 | POST | `/api/v1/user/password` | 验证旧密码后更新 | ✅ 已完成 |
 
-### 阶段二：资产账本 📋 计划中
+#### 交易模块 (Transaction Module)
+
+| 接口 | Method | Path | 说明 | 状态 |
+|-----|--------|------|------|------|
+| 创建交易 | POST | `/api/v1/transactions/create` | 记录买入/卖出交易，自动计算总金额 | ✅ 已完成 |
+| 查询交易列表 | GET | `/api/v1/transactions/list` | 分页查询，支持按股票/类型/日期筛选 | ✅ 已完成 |
+
+**交易模块特性：**
+- 使用 `decimal` 库保证金额计算精度，避免浮点数误差
+- 支持分页查询（page, page_size）
+- 支持多条件筛选：股票代码、交易类型（BUY/SELL）、日期范围
+- 完整的 Clean Architecture 分层实现
+
+### 阶段二：资产账本 📋 进行中
 
 > **目标**：实现交易记录管理，展示 Go 并发能力
 
-- [ ] 资产管理 CRUD
-- [ ] 交易记录流水
+- [x] 交易记录 CRUD
+- [ ] 持仓汇总统计
 - [ ] 实时行情获取（Goroutine 并发）
 - [ ] Redis 缓存层
 
@@ -160,10 +173,37 @@ curl -X POST http://localhost:8080/api/v1/user/register \
   -H "Content-Type: application/json" \
   -d '{"username": "test", "password": "123456", "email": "test@example.com"}'
 
-# 用户登录
+# 用户登录（获取 Token）
 curl -X POST http://localhost:8080/api/v1/user/login \
   -H "Content-Type: application/json" \
   -d '{"username": "test", "password": "123456"}'
+
+# 创建交易记录（需要 Token）
+curl -X POST http://localhost:8080/api/v1/transactions/create \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_token>" \
+  -d '{
+    "symbol": "AAPL",
+    "name": "Apple Inc.",
+    "type": "BUY",
+    "quantity": "100",
+    "price": "178.50",
+    "fee": "5.00",
+    "trade_time": "2024-01-15T10:30:00Z",
+    "notes": "逢低买入"
+  }'
+
+# 查询交易列表（需要 Token）
+curl -X GET "http://localhost:8080/api/v1/transactions/list?page=1&page_size=20" \
+  -H "Authorization: Bearer <your_token>"
+
+# 按股票筛选交易
+curl -X GET "http://localhost:8080/api/v1/transactions/list?symbol=AAPL" \
+  -H "Authorization: Bearer <your_token>"
+
+# 按日期范围筛选
+curl -X GET "http://localhost:8080/api/v1/transactions/list?start_date=2024-01-01&end_date=2024-12-31" \
+  -H "Authorization: Bearer <your_token>"
 ```
 
 ---
@@ -181,27 +221,39 @@ SmartFin-Go/
 │   ├── config/
 │   │   └── database.go          # 数据库配置
 │   ├── controller/
-│   │   └── user.go              # 用户控制器
+│   │   ├── user.go              # 用户控制器
+│   │   └── transaction.go       # 交易控制器
 │   ├── dao/
-│   │   └── user/
-│   │       ├── interface.go     # Repository 接口定义
+│   │   ├── user/
+│   │   │   ├── interface.go     # Repository 接口定义
+│   │   │   └── impl/
+│   │   │       └── repository.go
+│   │   └── transaction/
+│   │       ├── interface.go     # 交易 Repository 接口
 │   │       └── impl/
-│   │           └── repository.go # Repository 实现
+│   │           └── repository.go # 支持分页+筛选查询
 │   ├── domain/
-│   │   └── user/
-│   │       ├── interface.go     # Domain 接口定义
+│   │   ├── user/
+│   │   │   ├── interface.go     # Domain 接口定义
+│   │   │   └── impl/
+│   │   │       └── usecase.go
+│   │   └── transaction/
+│   │       ├── interface.go     # 交易 Domain 接口
 │   │       └── impl/
-│   │           └── usecase.go   # 业务逻辑实现
+│   │           └── usecase.go   # 交易业务逻辑（金额计算）
 │   ├── dto/
-│   │   └── user.go              # 数据传输对象
+│   │   ├── user.go              # 用户 DTO
+│   │   └── transaction.go       # 交易 DTO（请求/响应）
 │   ├── entity/
-│   │   └── user.go              # 数据库实体
+│   │   ├── user.go              # 用户实体
+│   │   └── transaction.go       # 交易实体（使用 decimal 精度）
 │   ├── middleware/
 │   │   └── jwt.go               # JWT 鉴权中间件
 │   ├── router/
 │   │   └── router.go            # 路由配置
 │   └── service/
-│       └── user.go              # 服务层
+│       ├── user.go              # 用户服务层
+│       └── transaction.go       # 交易服务层
 ├── pkg/
 │   ├── errcode/
 │   │   └── errcode.go           # 错误码定义
